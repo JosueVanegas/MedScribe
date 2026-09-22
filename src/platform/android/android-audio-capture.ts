@@ -1,6 +1,11 @@
 import { Capacitor } from "@capacitor/core";
 import { MicrophoneError, type AudioCapture } from "../types";
+import { amplitudeToLevel } from "@/lib/audio/level";
+import { getMessages } from "@/i18n/store";
 import { ConsultationRecorder } from "./consultation-recorder";
+
+const MAX_AMPLITUDE = 32767;
+const LEVEL_POLL_MS = 90;
 
 function errorCode(err: unknown): string | undefined {
   return (err as { code?: string } | null)?.code;
@@ -12,16 +17,20 @@ function errorCode(err: unknown): string | undefined {
  */
 export class AndroidAudioCapture implements AudioCapture {
   private recording = false;
+  private currentLevel = 0;
+  private levelTimer: ReturnType<typeof setInterval> | null = null;
 
   async start(): Promise<void> {
     try {
       await ConsultationRecorder.start();
       this.recording = true;
+      this.startLevelPolling();
     } catch (err) {
+      const t = getMessages().mic;
       throw new MicrophoneError(
         errorCode(err) === "PERMISSION_DENIED"
-          ? "Permiso de micrófono denegado. Actívalo en Ajustes → Apps → MedScribe → Permisos."
-          : `No se pudo iniciar la grabación${err instanceof Error ? `: ${err.message}` : "."}`
+          ? t.androidDenied
+          : t.androidStartFailed(err instanceof Error ? err.message : "")
       );
     }
   }
@@ -29,6 +38,7 @@ export class AndroidAudioCapture implements AudioCapture {
   async stop(): Promise<Blob | null> {
     if (!this.recording) return null;
     this.recording = false;
+    this.stopLevelPolling();
 
     let audio;
     try {
@@ -50,8 +60,33 @@ export class AndroidAudioCapture implements AudioCapture {
   }
 
   release(): void {
+    this.stopLevelPolling();
     if (!this.recording) return;
     this.recording = false;
     void ConsultationRecorder.cancel();
+  }
+
+  level(): number {
+    return this.currentLevel;
+  }
+
+  // The bridge is async, so the level is sampled here and read synchronously.
+  private startLevelPolling() {
+    this.stopLevelPolling();
+    this.levelTimer = setInterval(() => {
+      ConsultationRecorder.getLevel()
+        .then(({ amplitude }) => {
+          if (this.recording) {
+            this.currentLevel = amplitudeToLevel(amplitude / MAX_AMPLITUDE);
+          }
+        })
+        .catch(() => {});
+    }, LEVEL_POLL_MS);
+  }
+
+  private stopLevelPolling() {
+    if (this.levelTimer) clearInterval(this.levelTimer);
+    this.levelTimer = null;
+    this.currentLevel = 0;
   }
 }

@@ -1,13 +1,18 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Download, RefreshCw, RotateCcw, Settings } from "lucide-react";
 import { RecordButton } from "./RecordButton";
+import { LevelMeter } from "./LevelMeter";
 import { AudioUploadButton } from "./AudioUpload";
 import type { ConsultationStatus } from "@/types/consultation";
+import { useI18n } from "@/i18n/useI18n";
 
 type ControlBarProps = {
   status: ConsultationStatus;
   elapsedSeconds: number;
+  /** Live microphone loudness (0..1) while recording. */
+  readLevel: () => number;
   error: string | null;
   canRetry: boolean;
   canReset: boolean;
@@ -19,6 +24,7 @@ type ControlBarProps = {
   onDownloadAudio: () => void;
   onReset: () => void;
   onOpenSettings: () => void;
+  footer?: ReactNode;
 };
 
 function formatElapsed(seconds: number): string {
@@ -26,14 +32,6 @@ function formatElapsed(seconds: number): string {
   const s = seconds % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
-
-const hints: Record<ConsultationStatus, string> = {
-  idle: "Pulsa para grabar o sube un audio",
-  recording: "Pulsa para detener y generar el resumen",
-  transcribing: "Transcribiendo audio…",
-  summarizing: "Generando resumen…",
-  done: "Resumen generado",
-};
 
 const pillButton =
   "neu-button flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium text-text-muted hover:text-primary-700";
@@ -44,6 +42,7 @@ const roundButton =
 export function ControlBar({
   status,
   elapsedSeconds,
+  readLevel,
   error,
   canRetry,
   canReset,
@@ -55,13 +54,16 @@ export function ControlBar({
   onDownloadAudio,
   onReset,
   onOpenSettings,
+  footer,
 }: ControlBarProps) {
+  const { t } = useI18n();
+  const hints = t.control.hints;
   const canUpload = status === "idle" || status === "done";
   const isRecording = status === "recording";
 
   return (
-    <div className="px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-      <div className="mx-auto flex max-w-2xl flex-col items-center gap-4">
+    <div className="px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pt-3 sm:pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 sm:gap-4">
         {error && (
           <p
             key={error}
@@ -77,39 +79,44 @@ export function ControlBar({
             {canRetry && (
               <button onClick={onRetry} className={pillButton}>
                 <RefreshCw className="size-3.5" />
-                Reintentar
+                {t.common.retry}
               </button>
             )}
             {canDownloadAudio && (
               <button onClick={onDownloadAudio} className={pillButton}>
                 <Download className="size-3.5" />
-                Guardar audio
+                {t.control.saveAudio}
               </button>
             )}
             <button onClick={onOpenSettings} className={pillButton}>
               <Settings className="size-3.5" />
-              Configuración
+              {t.common.settings}
             </button>
           </div>
         )}
 
         {/* Fixed side slots keep the record button centred in every state. */}
-        <div className="grid grid-cols-[3rem_auto_3rem] items-center gap-8">
+        <div className="grid grid-cols-[3rem_auto_3rem] items-center gap-6 sm:gap-8">
           <div>
             {canReset && (
               <div className="animate-enter-scale">
                 <button
                   onClick={onReset}
                   className={roundButton}
-                  title="Nueva consulta"
-                  aria-label="Nueva consulta"
+                  title={t.control.newConsultation}
+                  aria-label={t.control.newConsultation}
                 >
                   <RotateCcw className="size-[18px]" />
                 </button>
               </div>
             )}
           </div>
-          <RecordButton status={status} onStart={onStart} onStop={onStop} />
+          <RecordButton
+            status={status}
+            onStart={onStart}
+            onStop={onStop}
+            readLevel={readLevel}
+          />
           <div>
             {canUpload && (
               <div className="animate-enter-scale">
@@ -119,21 +126,27 @@ export function ControlBar({
           </div>
         </div>
 
-        <p
-          key={status}
-          className="animate-fade text-[11px] font-medium text-text-muted"
-        >
-          {isRecording ? (
-            <>
-              <span className="mr-1.5 font-mono text-red-600 tabular-nums">
+        {isRecording ? (
+          <div className="flex w-full max-w-xs animate-fade flex-col items-center gap-1.5">
+            <div className="neu-inset-sm flex w-full items-center gap-3 rounded-full py-1.5 pr-4 pl-3">
+              <span className="flex shrink-0 items-center gap-1.5 font-mono text-xs font-semibold text-red-600 tabular-nums">
+                <span className="size-2 animate-pulse rounded-full bg-red-500" />
                 {formatElapsed(elapsedSeconds)}
               </span>
-              {hints.recording}
-            </>
-          ) : (
-            hints[status]
-          )}
-        </p>
+              <LevelMeter read={readLevel} tone="danger" className="h-7 min-w-0 flex-1" />
+            </div>
+            <p className="text-[11px] font-medium text-text-muted">{hints.recording}</p>
+          </div>
+        ) : (
+          <p
+            key={status}
+            className="animate-fade text-center text-[11px] font-medium text-text-muted"
+          >
+            {hints[status]}
+          </p>
+        )}
+
+        {footer}
       </div>
     </div>
   );

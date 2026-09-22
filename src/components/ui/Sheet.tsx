@@ -10,6 +10,7 @@ import {
 } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/useI18n";
 
 /** Closes with the exit animation, then runs `after` (e.g. delete, save). */
 export type CloseSheet = (after?: () => void) => void;
@@ -32,6 +33,7 @@ type SheetProps = {
  */
 export function Sheet({ title, subtitle, onClose, children, footer }: SheetProps) {
   // null while open; while closing, holds what to run after the exit animation.
+  const { t } = useI18n();
   const [closing, setClosing] = useState<{ after?: () => void } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const finishedRef = useRef(false);
@@ -68,7 +70,7 @@ export function Sheet({ title, subtitle, onClose, children, footer }: SheetProps
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-end justify-center bg-[rgb(236_240_244/0.7)] backdrop-blur-sm sm:items-center sm:p-6",
+        "fixed inset-0 z-50 flex items-end justify-center overscroll-contain bg-[rgb(239_239_239/0.7)] pt-[env(safe-area-inset-top)] backdrop-blur-sm sm:items-center sm:p-6",
         closing ? "animate-fade-out" : "animate-fade"
       )}
       onClick={(e) => {
@@ -89,11 +91,11 @@ export function Sheet({ title, subtitle, onClose, children, footer }: SheetProps
           if (e.target === e.currentTarget) finish();
         }}
       >
-        <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-3 sm:px-6">
-          <div className="min-w-0">
+        <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 sm:gap-4 sm:px-6">
+          <div className="min-w-0 flex-1">
             <h2
               id={titleId}
-              className="text-base font-semibold tracking-tight text-text"
+              className="text-base font-semibold tracking-tight break-words text-text"
             >
               {title}
             </h2>
@@ -103,14 +105,14 @@ export function Sheet({ title, subtitle, onClose, children, footer }: SheetProps
           </div>
           <button
             onClick={() => close()}
-            aria-label="Cerrar"
+            aria-label={t.common.close}
             className="neu-button flex size-10 shrink-0 items-center justify-center rounded-full text-text-muted hover:text-text"
           >
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
           {children}
         </div>
 

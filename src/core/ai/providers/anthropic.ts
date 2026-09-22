@@ -13,9 +13,9 @@ export const anthropicProvider: ProviderDefinition = {
   apiOrigin: "https://api.anthropic.com",
 
   summaryModels: [
-    { id: "claude-sonnet-5", label: "Claude Sonnet 5 (recomendado)" },
-    { id: "claude-haiku-4-5", label: "Claude Haiku 4.5 (económico)" },
-    { id: "claude-opus-5", label: "Claude Opus 5 (más preciso)" },
+    { id: "claude-sonnet-5", label: "Claude Sonnet 5", tag: "recommended" },
+    { id: "claude-haiku-4-5", label: "Claude Haiku 4.5", tag: "budget" },
+    { id: "claude-opus-5", label: "Claude Opus 5", tag: "accurate" },
   ],
   // Claude does not transcribe audio.
   transcriptionModels: [],

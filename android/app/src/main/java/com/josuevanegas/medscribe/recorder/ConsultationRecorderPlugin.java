@@ -131,6 +131,22 @@ public class ConsultationRecorderPlugin extends Plugin {
         call.resolve(result);
     }
 
+    /** Peak amplitude (0..32767) since the previous call, for the level meter. */
+    @PluginMethod
+    public void getLevel(PluginCall call) {
+        int amplitude = 0;
+        if (recorder != null) {
+            try {
+                amplitude = recorder.getMaxAmplitude();
+            } catch (IllegalStateException ignored) {
+                // recorder is stopping
+            }
+        }
+        JSObject result = new JSObject();
+        result.put("amplitude", amplitude);
+        call.resolve(result);
+    }
+
     /** Stops without keeping audio (e.g. the screen was closed mid-recording). */
     @PluginMethod
     public void cancel(PluginCall call) {

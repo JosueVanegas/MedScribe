@@ -1,7 +1,25 @@
 import { z } from "zod/v4";
 import type { ConsultationSummary } from "@/types/consultation";
 
+// Every field is required (strict structured output on some providers);
+// the model writes "" for anything the consultation doesn't mention.
+const patientSchema = z
+  .object({
+    name: z.string().describe("Patient's full name if said, otherwise empty string"),
+    age: z
+      .string()
+      .describe("Patient's age as stated, e.g. '45 años' or '8 months', otherwise empty string"),
+    sex: z.string().describe("Patient's sex or gender if stated or clearly implied, otherwise empty string"),
+    details: z
+      .string()
+      .describe(
+        "Other patient data mentioned, in one short line: ID/record number, occupation, weight, allergies, relevant medical history. Empty string if none"
+      ),
+  })
+  .describe("Patient data mentioned in the consultation");
+
 export const consultationSummarySchema = z.object({
+  patient: patientSchema,
   reasonForVisit: z
     .string()
     .describe("Main reason the patient came to the consultation"),

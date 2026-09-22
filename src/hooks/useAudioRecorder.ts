@@ -36,6 +36,9 @@ export function useAudioRecorder() {
     return (await captureRef.current?.stop()) ?? null;
   }, [wakeLock, stopTimer]);
 
+  /** Live loudness (0..1); cheap enough to call every animation frame. */
+  const readLevel = useCallback(() => captureRef.current?.level() ?? 0, []);
+
   useEffect(
     () => () => {
       stopTimer();
@@ -45,5 +48,5 @@ export function useAudioRecorder() {
     [wakeLock, stopTimer]
   );
 
-  return { start, stop, elapsedSeconds };
+  return { start, stop, elapsedSeconds, readLevel };
 }

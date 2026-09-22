@@ -11,9 +11,9 @@ export const mistralProvider: ProviderDefinition = {
   apiOrigin: "https://api.mistral.ai",
 
   summaryModels: [
-    { id: "mistral-medium-latest", label: "Mistral Medium (recomendado)" },
-    { id: "mistral-small-latest", label: "Mistral Small (económico)" },
-    { id: "mistral-large-latest", label: "Mistral Large (más preciso)" },
+    { id: "mistral-medium-latest", label: "Mistral Medium", tag: "recommended" },
+    { id: "mistral-small-latest", label: "Mistral Small", tag: "budget" },
+    { id: "mistral-large-latest", label: "Mistral Large", tag: "accurate" },
   ],
   transcriptionModels: [
     { id: "voxtral-mini-latest", label: "Voxtral Mini Transcribe" },

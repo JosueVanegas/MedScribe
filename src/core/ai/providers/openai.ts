@@ -10,12 +10,12 @@ export const openaiProvider: ProviderDefinition = {
   apiOrigin: "https://api.openai.com",
 
   summaryModels: [
-    { id: "gpt-5.4-mini", label: "GPT-5.4 mini (económico)" },
+    { id: "gpt-5.4-mini", label: "GPT-5.4 mini", tag: "budget" },
     { id: "gpt-5.5", label: "GPT-5.5" },
   ],
   transcriptionModels: [
-    { id: "gpt-4o-transcribe", label: "GPT-4o Transcribe (recomendado)" },
-    { id: "gpt-4o-mini-transcribe", label: "GPT-4o mini Transcribe (económico)" },
+    { id: "gpt-4o-transcribe", label: "GPT-4o Transcribe", tag: "recommended" },
+    { id: "gpt-4o-mini-transcribe", label: "GPT-4o mini Transcribe", tag: "budget" },
     { id: "whisper-1", label: "Whisper" },
   ],
 

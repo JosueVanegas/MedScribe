@@ -10,6 +10,9 @@ import { Summary } from "./Summary";
 import { History } from "./History";
 import { LoadingDots } from "./LoadingDots";
 import { SettingsPanel } from "./settings/SettingsPanel";
+import { MicTest } from "./MicTest";
+import { Credit } from "./Credit";
+import { LevelMeter } from "./LevelMeter";
 import { useConsultation } from "@/hooks/useConsultation";
 import { useConsultationHistory } from "@/hooks/useConsultationHistory";
 import { useAiSettings } from "@/hooks/useAiSettings";
@@ -17,7 +20,8 @@ import { createDirectConsultationApi } from "@/lib/api/consultation-api";
 import { isConfigured } from "@/core/ai/settings";
 import { createSummaryFile } from "@/lib/export/summary-export";
 import { usePlatform } from "@/platform/PlatformProvider";
-import type { TranscriptEntry } from "@/types/consultation";
+import type { ConsultationLanguage, TranscriptEntry } from "@/types/consultation";
+import { useI18n } from "@/i18n/useI18n";
 
 function toParagraphs(text: string): TranscriptEntry[] {
   return text
@@ -36,8 +40,14 @@ export function ConsultationApp() {
   const configured = isConfigured(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const openSettings = () => setSettingsOpen(true);
+  const [micTestOpen, setMicTestOpen] = useState(false);
+  const { t, locale } = useI18n();
 
-  const consultation = useConsultation({ api, onCompleted: addToHistory });
+  // Follows the app's language until the doctor picks another one.
+  const [chosenLanguage, setChosenLanguage] = useState<ConsultationLanguage | null>(null);
+  const language = chosenLanguage ?? locale;
+
+  const consultation = useConsultation({ api, language, onCompleted: addToHistory });
   const {
     status,
     isBusy,
@@ -74,13 +84,13 @@ export function ConsultationApp() {
 
   const transcriptEmptyMessage = isRecording
     ? liveCaptions.isAvailable
-      ? "Escuchando... Comienza a hablar."
-      : "Grabando audio. La transcripción aparecerá al terminar."
+      ? t.transcript.listening
+      : t.transcript.recordingNoCaptions
     : status === "transcribing"
       ? pendingAudio?.source === "upload"
-        ? `Transcribiendo "${pendingAudio.fileName}"...`
-        : "Transcribiendo la grabación..."
-      : "Pulsa el micrófono para grabar o sube un audio.";
+        ? t.transcript.transcribingFile(pendingAudio.fileName)
+        : t.transcript.transcribingRecording
+      : t.transcript.idle;
 
   const hasContent =
     status !== "idle" ||
@@ -99,8 +109,8 @@ export function ConsultationApp() {
           onTabChange={setRequestedTab}
           hasSummary={!!summary}
           hasHistory={history.length > 0}
-          language={consultation.language}
-          onToggleLanguage={consultation.toggleLanguage}
+          language={language}
+          onLanguageChange={setChosenLanguage}
           onExport={() => {
             if (!summary) return;
             const { file, fileName } = createSummaryFile(summary, transcript);
@@ -110,7 +120,7 @@ export function ConsultationApp() {
         />
       )}
 
-      <main className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 overflow-hidden px-4 py-3">
+      <main className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-3 overflow-hidden px-4 py-2 sm:gap-4 sm:py-3">
         {/* Keyed wrapper: each view change plays a soft enter transition. */}
         <div
           key={hasContent ? activeTab : "empty"}
@@ -118,13 +128,14 @@ export function ConsultationApp() {
         >
           {!hasContent ? (
             <EmptyState
-              language={consultation.language}
-              onToggleLanguage={consultation.toggleLanguage}
+              language={language}
+              onLanguageChange={setChosenLanguage}
               historyCount={history.length}
               onOpenHistory={() => setRequestedTab("history")}
               onUpload={requiringSetup(consultation.uploadAudio)}
               needsSetup={isHydrated && !configured}
               onOpenSettings={openSettings}
+              onTestMic={() => setMicTestOpen(true)}
               showDownloadLink={isHydrated && platformId === "web"}
             />
           ) : activeTab === "history" ? (
@@ -139,6 +150,16 @@ export function ConsultationApp() {
               entries={isRecording ? liveCaptions.entries : paragraphs}
               interimText={isRecording ? liveCaptions.interimText : ""}
               emptyMessage={transcriptEmptyMessage}
+              emptyVisual={
+                isRecording && (
+                  <LevelMeter
+                    read={consultation.readLevel}
+                    tone="danger"
+                    barStep={6}
+                    className="h-24 w-full max-w-sm animate-fade"
+                  />
+                )
+              }
             />
           )}
         </div>
@@ -150,9 +171,7 @@ export function ConsultationApp() {
           >
             <LoadingDots />
             <p className="text-xs font-medium text-text-muted">
-              {status === "transcribing"
-                ? "Transcribiendo el audio de la consulta…"
-                : "Generando el resumen clínico…"}
+              {status === "transcribing" ? t.busy.transcribing : t.busy.summarizing}
             </p>
           </div>
         )}
@@ -161,6 +180,7 @@ export function ConsultationApp() {
       <ControlBar
         status={status}
         elapsedSeconds={consultation.elapsedSeconds}
+        readLevel={consultation.readLevel}
         error={consultation.error}
         canRetry={consultation.canRetry}
         canReset={hasContent && !isRecording && !isBusy}
@@ -176,6 +196,7 @@ export function ConsultationApp() {
         }
         onReset={withAutoTab(consultation.reset)}
         onOpenSettings={openSettings}
+        footer={!hasContent && <Credit className="animate-fade" />}
       />
 
       {settingsOpen && (
@@ -185,6 +206,8 @@ export function ConsultationApp() {
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      {micTestOpen && <MicTest onClose={() => setMicTestOpen(false)} />}
     </div>
   );
 }

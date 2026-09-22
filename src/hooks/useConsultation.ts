@@ -16,6 +16,8 @@ import type {
   ConsultationSummary,
   SavedConsultation,
 } from "@/types/consultation";
+import { localeInfo } from "@/i18n/locales";
+import { getMessages } from "@/i18n/store";
 
 type PendingAudio = {
   blob: Blob;
@@ -25,12 +27,9 @@ type PendingAudio = {
 
 type UseConsultationOptions = {
   api: ConsultationApi;
+  /** Language spoken in the consultation; chosen by the app. */
+  language: ConsultationLanguage;
   onCompleted?: (consultation: SavedConsultation) => void;
-};
-
-const speechLocales: Record<ConsultationLanguage, string> = {
-  es: "es-ES",
-  en: "en-US",
 };
 
 function extensionFor(mimeType: string): string {
@@ -47,17 +46,17 @@ function errorMessage(err: unknown, fallback: string): string {
  * Orchestrates a consultation: audio in (microphone or file) → transcript →
  * structured summary. UI components only render what this hook exposes.
  */
-export function useConsultation({ api, onCompleted }: UseConsultationOptions) {
+export function useConsultation({ api, language, onCompleted }: UseConsultationOptions) {
   const {
     start: startRecorder,
     stop: stopRecorder,
     elapsedSeconds,
+    readLevel,
   } = useAudioRecorder();
   const captions = useLiveCaptions();
   const { start: startCaptions, stop: stopCaptions } = captions;
 
   const [status, setStatus] = useState<ConsultationStatus>("idle");
-  const [language, setLanguage] = useState<ConsultationLanguage>("es");
   const [transcript, setTranscript] = useState("");
   const [summary, setSummary] = useState<ConsultationSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +81,7 @@ export function useConsultation({ api, onCompleted }: UseConsultationOptions) {
           fileName: audio?.source === "upload" ? audio.fileName : undefined,
         });
       } catch (err) {
-        setError(errorMessage(err, "No se pudo generar el resumen."));
+        setError(errorMessage(err, getMessages().errors.summarizeFailed));
         setStatus("idle");
       }
     },
@@ -101,7 +100,7 @@ export function useConsultation({ api, onCompleted }: UseConsultationOptions) {
       try {
         text = await api.transcribe(audio.blob, language);
       } catch (err) {
-        setError(errorMessage(err, "No se pudo transcribir el audio."));
+        setError(errorMessage(err, getMessages().errors.transcribeFailed));
         setStatus("idle");
         return;
       }
@@ -117,14 +116,14 @@ export function useConsultation({ api, onCompleted }: UseConsultationOptions) {
       await startRecorder();
     } catch (err) {
       // Keep whatever was on screen; just explain why the mic failed.
-      setError(errorMessage(err, "No se pudo acceder al micrófono."));
+      setError(errorMessage(err, getMessages().errors.micUnavailable));
       return;
     }
     setError(null);
     setSummary(null);
     setTranscript("");
     setPendingAudio(null);
-    startCaptions(speechLocales[language]);
+    startCaptions(localeInfo[language].bcp47);
     setStatus("recording");
   }, [startRecorder, startCaptions, language]);
 
@@ -133,13 +132,13 @@ export function useConsultation({ api, onCompleted }: UseConsultationOptions) {
     const blob = await stopRecorder();
     if (!blob || blob.size === 0) {
       setStatus("idle");
-      setError("No se capturó audio. Intenta de nuevo.");
+      setError(getMessages().errors.noAudio);
       return;
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
     await processAudio({
       blob,
-      fileName: `consulta-${stamp}.${extensionFor(blob.type)}`,
+      fileName: `${getMessages().export.fileName}-${stamp}.${extensionFor(blob.type)}`,
       source: "recording",
     });
   }, [stopCaptions, stopRecorder, processAudio]);
@@ -147,13 +146,11 @@ export function useConsultation({ api, onCompleted }: UseConsultationOptions) {
   const uploadAudio = useCallback(
     async (file: File) => {
       if (!isAcceptedAudio(file)) {
-        setError(
-          "Formato no soportado. Usa MP3, M4A, WAV, OGG, OPUS, WEBM, AAC o FLAC."
-        );
+        setError(getMessages().errors.unsupportedFormat);
         return;
       }
       if (file.size > MAX_AUDIO_BYTES) {
-        setError(`El archivo supera el límite de ${MAX_AUDIO_MB} MB.`);
+        setError(getMessages().errors.fileTooLarge(MAX_AUDIO_MB));
         return;
       }
       await processAudio({ blob: file, fileName: file.name, source: "upload" });
@@ -175,29 +172,23 @@ export function useConsultation({ api, onCompleted }: UseConsultationOptions) {
     setPendingAudio(null);
   }, [stopCaptions]);
 
-  const toggleLanguage = useCallback(
-    () => setLanguage((prev) => (prev === "es" ? "en" : "es")),
-    []
-  );
-
   const isBusy = status === "transcribing" || status === "summarizing";
 
   return {
     status,
     isBusy,
-    language,
     transcript,
     summary,
     error,
     pendingAudio,
     canRetry: status === "idle" && !summary && !!(transcript || pendingAudio),
     elapsedSeconds,
+    readLevel,
     liveCaptions: captions,
     startRecording,
     stopRecording,
     uploadAudio,
     retry,
     reset,
-    toggleLanguage,
   };
 }

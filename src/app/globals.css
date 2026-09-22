@@ -3,15 +3,17 @@
 /*
  * Neumorphic design system.
  * Every surface shares the page colour; depth comes only from paired
- * light/dark shadows. Colour is reserved for meaning (teal = action,
- * red = recording/danger), which keeps the UI calm and clinical.
+ * light/dark shadows. Black and white only; colour is reserved for
+ * meaning (red = recording/danger), which keeps the UI calm and clinical.
  */
 
 :root {
-  --neu-bg: #ecf0f4;
+  --neu-bg: #efefef;
   --neu-light: #ffffff;
-  --neu-dark: rgb(163 177 198 / 0.62);
-  --neu-dark-soft: rgb(163 177 198 / 0.4);
+  --neu-dark: rgb(170 170 170 / 0.62);
+  --neu-dark-soft: rgb(170 170 170 / 0.4);
+  /* Soft focus outline: visible for keyboard users without a hard black ring. */
+  --focus-ring: rgb(0 0 0 / 0.22);
 
   /* Motion curves. Only transform/opacity are animated (GPU-composited). */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -22,22 +24,23 @@
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  --color-primary-50: #effaf7;
-  --color-primary-100: #d3f2ea;
-  --color-primary-200: #a7e4d5;
-  --color-primary-300: #6fd0b9;
-  --color-primary-400: #34b999;
-  --color-primary-500: #16a384;
-  --color-primary-600: #0e876d;
-  --color-primary-700: #0d6c58;
-  --color-primary-800: #0f5647;
-  --color-primary-900: #10473b;
+  /* "Primary" is plain black; the light steps are neutral greys. */
+  --color-primary-50: #f5f5f5;
+  --color-primary-100: #e5e5e5;
+  --color-primary-200: #d4d4d4;
+  --color-primary-300: #a3a3a3;
+  --color-primary-400: #525252;
+  --color-primary-500: #000000;
+  --color-primary-600: #000000;
+  --color-primary-700: #000000;
+  --color-primary-800: #000000;
+  --color-primary-900: #000000;
 
   --color-surface: var(--neu-bg);
   --color-surface-alt: var(--neu-bg);
-  --color-text: #1f2b3a;
-  --color-text-muted: #56667b;
-  --color-border: #d5dde6;
+  --color-text: #111111;
+  --color-text-muted: #5c5c5c;
+  --color-border: #d6d6d6;
 
   --animate-enter: enter 480ms var(--ease-out-soft) backwards;
   --animate-enter-scale: enter-scale 420ms var(--ease-spring) backwards;
@@ -151,6 +154,8 @@
 @utility collapsible {
   display: grid;
   grid-template-rows: 1fr;
+  /* Without this the column grows to fit long text and overflows sideways. */
+  grid-template-columns: minmax(0, 1fr);
   transition:
     grid-template-rows 320ms var(--ease-out-soft),
     opacity 240ms ease,
@@ -234,10 +239,10 @@
   }
 }
 
-/* Primary action: convex teal. */
+/* Primary action: convex black. */
 @utility neu-primary {
   color: #fff;
-  background: linear-gradient(145deg, #1bb592, #11937a);
+  background: linear-gradient(145deg, #2b2b2b, #000000);
   box-shadow:
     5px 5px 12px var(--neu-dark),
     -5px -5px 12px var(--neu-light);
@@ -254,7 +259,7 @@
   &:active:not(:disabled) {
     transform: scale(0.95);
     transition-duration: 90ms;
-    background: linear-gradient(145deg, #11937a, #1bb592);
+    background: linear-gradient(145deg, #000000, #2b2b2b);
     box-shadow:
       inset 3px 3px 7px rgb(0 0 0 / 0.18),
       inset -3px -3px 7px rgb(255 255 255 / 0.12);
@@ -285,13 +290,16 @@
 
 @utility neu-focus {
   &:focus-visible {
-    outline: 2px solid var(--color-primary-400);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 3px;
   }
 }
 
 html {
   background: var(--neu-bg);
+  /* No rubber-band / pull-to-refresh on the app shell; inner panels scroll. */
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -299,11 +307,15 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  overflow-x: clip;
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-primary-400);
-  outline-offset: 3px;
+/* In the base layer so a component's own outline utilities can override it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
 }
 
 ::selection {

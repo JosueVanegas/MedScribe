@@ -1,49 +1,70 @@
 import type { ConsultationSummary } from "@/types/consultation";
-import { getOverview } from "@/lib/format";
+import { getOverview, getPatient } from "@/lib/format";
+import { localeInfo } from "@/i18n/locales";
+import { getLocale, getMessages } from "@/i18n/store";
 
 const RULE = "═══════════════════════════════════════";
 
+/** Headings follow the app's language; the content is in the consultation's. */
 export function formatSummaryAsText(
   summary: ConsultationSummary,
   transcript: string,
   date = new Date()
 ): string {
+  const t = getMessages().export;
+  const patient = getPatient(summary);
+  const patientRows: [string, string][] = patient
+    ? [
+        [t.name, patient.name],
+        [t.age, patient.age],
+        [t.sex, patient.sex],
+        [t.otherData, patient.details],
+      ]
+    : [];
+
   return [
     RULE,
-    "  RESUMEN DE CONSULTA MEDICA",
-    "  Generado por MedScribe",
-    `  Fecha: ${date.toLocaleDateString("es-ES")}`,
+    `  ${t.heading}`,
+    `  ${t.generatedBy}`,
+    `  ${t.date}: ${date.toLocaleDateString(localeInfo[getLocale()].bcp47)}`,
     RULE,
     "",
-    "EN RESUMEN",
+    ...(patient
+      ? [
+          t.patient,
+          ...patientRows
+            .filter(([, value]) => value)
+            .map(([label, value]) => `  ${label}: ${value}`),
+          "",
+        ]
+      : []),
+    t.overview,
     getOverview(summary),
     "",
-    "MOTIVO DE CONSULTA",
+    t.reason,
     summary.reasonForVisit,
     "",
-    "SINTOMAS",
+    t.symptoms,
     ...summary.symptoms.map((s) => `  - ${s}`),
     "",
-    "HALLAZGOS",
+    t.findings,
     summary.findings,
     "",
-    "DIAGNOSTICO",
+    t.diagnosis,
     summary.diagnosis,
     "",
-    "PLAN DE TRATAMIENTO",
+    t.treatment,
     summary.treatmentPlan,
     "",
-    "MEDICACION",
+    t.medications,
     ...summary.medications.map((m) => `  - ${m}`),
     "",
-    "SEGUIMIENTO",
+    t.followUp,
     summary.followUp,
     "",
-    summary.additionalNotes
-      ? `NOTAS ADICIONALES\n${summary.additionalNotes}\n`
-      : "",
+    summary.additionalNotes ? `${t.notes}\n${summary.additionalNotes}\n` : "",
     RULE,
-    "TRANSCRIPCION COMPLETA",
+    t.transcript,
     RULE,
     transcript,
   ].join("\n");
@@ -59,6 +80,6 @@ export function createSummaryFile(
     file: new Blob([formatSummaryAsText(summary, transcript, date)], {
       type: "text/plain;charset=utf-8",
     }),
-    fileName: `consulta-${date.toISOString().split("T")[0]}.txt`,
+    fileName: `${getMessages().export.fileName}-${date.toISOString().split("T")[0]}.txt`,
   };
 }

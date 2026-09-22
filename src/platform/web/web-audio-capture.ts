@@ -1,6 +1,11 @@
 /** Browser microphone capture with MediaRecorder. */
 
 import { MicrophoneError, type AudioCapture } from "../types";
+import {
+  createStreamLevelReader,
+  type StreamLevelReader,
+} from "@/lib/audio/level";
+import { getMessages } from "@/i18n/store";
 
 const PREFERRED_MIME_TYPES = [
   "audio/webm;codecs=opus",
@@ -23,28 +28,21 @@ function pickMimeType(): string | undefined {
   );
 }
 
-function toMicrophoneError(err: unknown): MicrophoneError {
+export function toMicrophoneError(err: unknown): MicrophoneError {
+  const t = getMessages().mic;
   const name = err instanceof DOMException ? err.name : "";
   switch (name) {
     case "NotAllowedError":
     case "SecurityError":
-      return new MicrophoneError(
-        "Acceso al micrófono denegado. Permítelo desde el icono del candado en la barra de direcciones."
-      );
+      return new MicrophoneError(t.denied);
     case "NotFoundError":
     case "OverconstrainedError":
-      return new MicrophoneError(
-        "No se encontró ningún micrófono conectado."
-      );
+      return new MicrophoneError(t.notFound);
     case "NotReadableError":
     case "AbortError":
-      return new MicrophoneError(
-        "El micrófono está en uso por otra aplicación. Ciérrala e inténtalo de nuevo."
-      );
+      return new MicrophoneError(t.busy);
     default:
-      return new MicrophoneError(
-        `No se pudo acceder al micrófono${err instanceof Error ? `: ${err.message}` : "."}`
-      );
+      return new MicrophoneError(t.generic(err instanceof Error ? err.message : ""));
   }
 }
 
@@ -52,17 +50,14 @@ export class WebAudioCapture implements AudioCapture {
   private recorder: MediaRecorder | null = null;
   private stream: MediaStream | null = null;
   private chunks: Blob[] = [];
+  private meter: StreamLevelReader | null = null;
 
   async start(): Promise<void> {
     if (!window.isSecureContext) {
-      throw new MicrophoneError(
-        "El micrófono solo funciona en HTTPS o en localhost. Abre la app con https:// (o usa `npm run dev -- --experimental-https`)."
-      );
+      throw new MicrophoneError(getMessages().mic.insecureContext);
     }
     if (!isRecordingSupported()) {
-      throw new MicrophoneError(
-        "Este navegador no permite grabar audio. Usa Chrome, Edge, Firefox o Safari actualizados, o sube un audio."
-      );
+      throw new MicrophoneError(getMessages().mic.unsupported);
     }
 
     try {
@@ -73,6 +68,7 @@ export class WebAudioCapture implements AudioCapture {
       throw toMicrophoneError(err);
     }
 
+    this.meter = createStreamLevelReader(this.stream);
     const mimeType = pickMimeType();
     this.chunks = [];
     this.recorder = new MediaRecorder(this.stream, {
@@ -107,9 +103,15 @@ export class WebAudioCapture implements AudioCapture {
 
   /** Releases the microphone without producing audio. */
   release(): void {
+    this.meter?.close();
+    this.meter = null;
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
     this.recorder = null;
     this.chunks = [];
+  }
+
+  level(): number {
+    return this.meter?.read() ?? 0;
   }
 }

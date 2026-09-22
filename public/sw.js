@@ -1,12 +1,14 @@
 // MedScribe service worker: makes the app installable and lets it open
 // without a connection. It only caches the app itself — never calls to AI
 // providers (cross-origin requests are not intercepted).
-const CACHE = "medscribe-v1";
+const CACHE = "medscribe-v2";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/logo.svg",
+  "/favicon.svg",
 ];
 
 self.addEventListener("install", (event) => {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, ExternalLink, Eye, EyeOff, Loader2, XCircle } from "lucide-react";
 import type { ProviderDefinition } from "@/core/ai/providers";
 import { inputClass } from "./ModelChoiceField";
+import { useI18n } from "@/i18n/useI18n";
 
 type Verification =
   | { state: "idle" }
@@ -18,6 +19,7 @@ type ApiKeyFieldProps = {
 };
 
 export function ApiKeyField({ provider, value, onChange }: ApiKeyFieldProps) {
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
   const [verification, setVerification] = useState<Verification>({ state: "idle" });
 
@@ -29,7 +31,7 @@ export function ApiKeyField({ provider, value, onChange }: ApiKeyFieldProps) {
     } catch (err) {
       setVerification({
         state: "error",
-        message: err instanceof Error ? err.message : "No se pudo verificar la key.",
+        message: err instanceof Error ? err.message : t.apiKey.verifyFailed,
       });
     }
   };
@@ -40,7 +42,7 @@ export function ApiKeyField({ provider, value, onChange }: ApiKeyFieldProps) {
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
         <label htmlFor={inputId} className="text-sm font-medium text-text">
-          API key de {provider.name}
+          {t.apiKey.label(provider.name)}
         </label>
         <a
           href={provider.apiKeyUrl}
@@ -48,7 +50,7 @@ export function ApiKeyField({ provider, value, onChange }: ApiKeyFieldProps) {
           rel="noreferrer"
           className="flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline"
         >
-          Obtener key <ExternalLink className="size-3" />
+          {t.apiKey.get} <ExternalLink className="size-3" />
         </a>
       </div>
       <div className="flex gap-2">
@@ -69,7 +71,7 @@ export function ApiKeyField({ provider, value, onChange }: ApiKeyFieldProps) {
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? "Ocultar key" : "Mostrar key"}
+            aria-label={visible ? t.apiKey.hide : t.apiKey.show}
             className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-xl text-text-muted hover:text-text"
           >
             {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -81,17 +83,17 @@ export function ApiKeyField({ provider, value, onChange }: ApiKeyFieldProps) {
           disabled={!value.trim() || verification.state === "checking"}
           className="neu-button shrink-0 rounded-xl px-4 text-xs font-medium text-text-muted hover:text-primary-700"
         >
-          Verificar
+          {t.apiKey.verify}
         </button>
       </div>
       {verification.state === "checking" && (
         <p className="flex animate-enter items-center gap-1 text-xs text-text-muted">
-          <Loader2 className="size-3 animate-spin" /> Verificando…
+          <Loader2 className="size-3 animate-spin" /> {t.apiKey.verifying}
         </p>
       )}
       {verification.state === "ok" && (
         <p className="flex animate-enter items-center gap-1 text-xs font-medium text-primary-700">
-          <CheckCircle2 className="size-3" /> Key válida
+          <CheckCircle2 className="size-3" /> {t.apiKey.valid}
         </p>
       )}
       {verification.state === "error" && (

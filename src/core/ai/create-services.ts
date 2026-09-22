@@ -6,10 +6,11 @@ import { AiSdkConsultationSummarizer } from "./ai-sdk-summarizer";
 import { AiSdkAudioTranscriber } from "./ai-sdk-transcriber";
 import { getProvider } from "./providers";
 import type { AiSettings } from "./settings";
+import { getMessages } from "@/i18n/store";
 
 export class MissingApiKeyError extends Error {
   constructor(providerName: string) {
-    super(`Falta la API key de ${providerName}. Añádela en Configuración.`);
+    super(getMessages().errors.missingKey(providerName));
   }
 }
 
@@ -24,7 +25,7 @@ export function createTranscriber(settings: AiSettings): AudioTranscriber {
   const { provider: id, model } = settings.transcription;
   const provider = getProvider(id);
   if (!provider.createTranscriptionModel) {
-    throw new Error(`${provider.name} no puede transcribir audio.`);
+    throw new Error(getMessages().errors.cannotTranscribe(provider.name));
   }
   return new AiSdkAudioTranscriber(
     provider.createTranscriptionModel(requireKey(settings, id), model),

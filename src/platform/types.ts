@@ -20,6 +20,8 @@ export interface AudioCapture {
   stop(): Promise<Blob | null>;
   /** Frees the microphone without producing audio. */
   release(): void;
+  /** Current input loudness (0..1) for the level meter; 0 when not recording. */
+  level(): number;
 }
 
 export interface FileSaver {

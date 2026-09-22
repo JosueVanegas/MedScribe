@@ -1,4 +1,7 @@
-export type ConsultationLanguage = "es" | "en";
+import type { Locale } from "@/i18n/locales";
+
+/** Language spoken in the consultation (independent from the app's UI language). */
+export type ConsultationLanguage = Locale;
 
 export type ConsultationStatus =
   | "idle"
@@ -7,7 +10,18 @@ export type ConsultationStatus =
   | "summarizing"
   | "done";
 
+/** Each field is "" when the consultation doesn't mention it. */
+export type PatientInfo = {
+  name: string;
+  age: string;
+  sex: string;
+  /** Other identifying or background data: ID, occupation, allergies, history… */
+  details: string;
+};
+
 export type ConsultationSummary = {
+  /** Optional: consultations saved before it existed lack it. */
+  patient?: PatientInfo;
   reasonForVisit: string;
   symptoms: string[];
   findings: string;

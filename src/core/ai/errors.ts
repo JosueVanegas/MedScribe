@@ -1,4 +1,5 @@
 import { APICallError, RetryError } from "ai";
+import { getMessages } from "@/i18n/store";
 
 function unwrap(err: unknown): unknown {
   return RetryError.isInstance(err) ? err.lastError : err;
@@ -7,32 +8,33 @@ function unwrap(err: unknown): unknown {
 /** Turns vendor/SDK errors into messages a clinic can act on. */
 export function describeAiError(err: unknown, fallback: string): string {
   const cause = unwrap(err);
+  const t = getMessages().errors;
 
   if (APICallError.isInstance(cause)) {
     switch (cause.statusCode) {
       case 400:
         return /api key/i.test(cause.message)
-          ? "La API key no es válida. Revísala en Configuración."
-          : `El proveedor rechazó la petición: ${cause.message}`;
+          ? t.invalidKey
+          : t.rejected(cause.message);
       case 401:
       case 403:
-        return "La API key no es válida o no tiene permisos. Revísala en Configuración.";
+        return t.unauthorized;
       case 404:
-        return "El modelo elegido no existe o tu cuenta no tiene acceso. Cambia de modelo en Configuración.";
+        return t.modelNotFound;
       case 413:
-        return "El audio es demasiado grande para este proveedor.";
+        return t.audioTooLargeForProvider;
       case 429:
-        return "Se alcanzó el límite de uso o saldo de tu cuenta del proveedor. Espera un momento o revisa tu facturación.";
+        return t.rateLimited;
       case 500:
       case 502:
       case 503:
       case 529:
-        return "El proveedor está saturado en este momento. Pulsa Reintentar en unos segundos.";
+        return t.overloaded;
     }
   }
 
   if (cause instanceof TypeError && /fetch/i.test(cause.message)) {
-    return "Sin conexión con el proveedor. Revisa tu internet.";
+    return t.offline;
   }
 
   return cause instanceof Error ? cause.message : fallback;

@@ -1,6 +1,8 @@
+import { getMessages } from "@/i18n/store";
+
 export class InvalidApiKeyError extends Error {
   constructor(providerName: string) {
-    super(`La API key de ${providerName} no es válida.`);
+    super(getMessages().errors.keyInvalidFor(providerName));
   }
 }
 
@@ -14,14 +16,12 @@ export async function verifyWithRequest(
   try {
     res = await fetch(url, { headers });
   } catch {
-    throw new Error(
-      `No se pudo contactar con ${providerName}. Revisa tu conexión a internet.`
-    );
+    throw new Error(getMessages().errors.cannotReach(providerName));
   }
   if (res.status === 400 || res.status === 401 || res.status === 403) {
     throw new InvalidApiKeyError(providerName);
   }
   if (!res.ok) {
-    throw new Error(`${providerName} respondió con un error (${res.status}).`);
+    throw new Error(getMessages().errors.providerError(providerName, res.status));
   }
 }

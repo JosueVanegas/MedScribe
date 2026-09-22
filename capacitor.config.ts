@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: "MedScribe",
   // Static export from `next build`; the same bundle the web and desktop use.
   webDir: "out",
-  backgroundColor: "#ecf0f4",
+  backgroundColor: "#efefef",
   // WebView debugging stays at Capacitor's default: on for debug builds,
   // off for the release APK that clinics install.
 };

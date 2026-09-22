@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, type TransitionEvent } from "react";
-import { ChevronRight, Clock, Mic, Upload } from "lucide-react";
+import { ChevronRight, Clock, Mic, Upload, UserRound } from "lucide-react";
 import { ConsultationDetail } from "./ConsultationDetail";
 import type { SavedConsultation } from "@/types/consultation";
-import { formatDateTime, getOverview } from "@/lib/format";
+import { formatPatientLine, getOverview, getPatient } from "@/lib/format";
+import { useI18n } from "@/i18n/useI18n";
 import { staggerIndex } from "@/lib/utils";
 
 // Collapse transition is 320ms (see `collapsible` in globals.css).
@@ -16,6 +17,7 @@ type HistoryProps = {
 };
 
 export function History({ consultations, onDelete }: HistoryProps) {
+  const { t, formatDateTime } = useI18n();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Items collapse first, then are removed once the animation finishes.
   const [removing, setRemoving] = useState<ReadonlySet<string>>(new Set());
@@ -49,7 +51,7 @@ export function History({ consultations, onDelete }: HistoryProps) {
         <div className="flex flex-col items-center gap-3">
           <Clock className="size-9 text-text-muted/50" />
           <p className="text-sm text-text-muted">
-            No hay consultas guardadas todavía.
+            {t.history.empty}
           </p>
         </div>
       </div>
@@ -57,9 +59,11 @@ export function History({ consultations, onDelete }: HistoryProps) {
   }
 
   return (
-    <div className="-mx-4 flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3">
+    <div className="-mx-4 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-3">
       {consultations.map((c, i) => {
         const isUpload = c.source === "upload";
+        const patient = getPatient(c.summary);
+        const ageSex = patient ? formatPatientLine({ ...patient, name: "" }) : "";
         return (
           <div
             key={c.id}
@@ -72,9 +76,23 @@ export function History({ consultations, onDelete }: HistoryProps) {
               <button
                 onClick={() => setSelectedId(c.id)}
                 style={staggerIndex(i)}
-                className="neu-button stagger flex w-full animate-enter items-center gap-4 rounded-3xl p-4 text-left"
+                className="neu-button stagger flex w-full animate-enter items-center gap-3 rounded-3xl p-4 text-left sm:gap-4"
               >
                 <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  {patient && (
+                    <span className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-primary-700">
+                      <UserRound className="size-3.5 shrink-0" />
+                      {/* Only the name truncates; age and sex stay visible. */}
+                      <span className="truncate">
+                        {patient.name || ageSex || patient.details}
+                      </span>
+                      {patient.name && ageSex && (
+                        <span className="shrink-0 font-medium text-primary-700/80">
+                          · {ageSex}
+                        </span>
+                      )}
+                    </span>
+                  )}
                   <span className="line-clamp-1 text-sm font-semibold text-text">
                     {c.summary.diagnosis || c.summary.reasonForVisit}
                   </span>
@@ -90,7 +108,7 @@ export function History({ consultations, onDelete }: HistoryProps) {
                       <Mic className="size-3 shrink-0" />
                     )}
                     <span className="truncate">
-                      {isUpload ? (c.fileName ?? "Audio subido") : "Grabada"}
+                      {isUpload ? (c.fileName ?? t.history.uploaded) : t.history.recorded}
                     </span>
                   </span>
                 </span>

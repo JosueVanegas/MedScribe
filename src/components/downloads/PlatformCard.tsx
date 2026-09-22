@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { cn, staggerIndex } from "@/lib/utils";
+import { useI18n } from "@/i18n/useI18n";
 
 type PlatformCardProps = {
   icon: ReactNode;
@@ -22,11 +25,12 @@ export function PlatformCard({
   footnote,
   index,
 }: PlatformCardProps) {
+  const { t } = useI18n();
   return (
     <section
       style={staggerIndex(index)}
       className={cn(
-        "neu-raised stagger flex animate-enter flex-col gap-5 rounded-3xl p-6",
+        "neu-raised stagger flex animate-enter flex-col gap-5 rounded-3xl p-5 sm:p-6",
         recommended && "ring-2 ring-primary-300"
       )}
     >
@@ -41,7 +45,7 @@ export function PlatformCard({
             </h2>
             {recommended && (
               <span className="neu-inset-sm rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-primary-700">
-                Tu dispositivo
+                {t.downloads.yourDevice}
               </span>
             )}
           </div>

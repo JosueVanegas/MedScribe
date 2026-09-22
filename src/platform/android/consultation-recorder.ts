@@ -13,6 +13,8 @@ export interface ConsultationRecorderPlugin {
   stop(): Promise<RecordedAudio>;
   cancel(): Promise<void>;
   discard(options: { path: string }): Promise<void>;
+  /** Peak amplitude (0..32767) since the previous call. */
+  getLevel(): Promise<{ amplitude: number }>;
 }
 
 export const ConsultationRecorder =

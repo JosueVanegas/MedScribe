@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { providers } from "@/core/ai/providers";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { PlatformProvider } from "@/platform/PlatformProvider";
+import { HtmlLang } from "@/i18n/HtmlLang";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,23 +17,57 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const title = "MedScribe - Resumen de consultas con IA";
+const description =
+  "Graba o sube el audio de una consulta médica y obtén un resumen clínico estructurado. Gratis, con tu propio proveedor de IA.";
+
+
 export const metadata: Metadata = {
-  title: "MedScribe - Resumen de consultas con IA",
-  description:
-    "Graba o sube el audio de una consulta médica y obtén un resumen clínico estructurado. Gratis, con tu propio proveedor de IA.",
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "/" },
+  title,
+  description,
   applicationName: "MedScribe",
+  keywords: [
+    "resumen de consultas médicas",
+    "transcripción médica",
+    "IA para clínicas",
+    "historia clínica",
+    "dictado médico",
+  ],
+  authors: [{ name: "Josue Vanegas" }],
+  creator: "Josue Vanegas",
+  openGraph: {
+    type: "website",
+    locale: "es_ES",
+    siteName: "MedScribe",
+    title,
+    description,
+    url: "/",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "MedScribe" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/og.png"],
+  },
   appleWebApp: {
     capable: true,
     title: "MedScribe",
     statusBarStyle: "default",
   },
   icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
     apple: "/icons/apple-touch-icon.png",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ecf0f4",
+  themeColor: "#efefef",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -75,6 +111,7 @@ export default function RootLayout({
         <PlatformProvider>
           {children}
           <ServiceWorkerRegistration />
+          <HtmlLang />
         </PlatformProvider>
       </body>
     </html>

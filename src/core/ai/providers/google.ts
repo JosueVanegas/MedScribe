@@ -1,10 +1,9 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { ProviderDefinition } from "./types";
 import { verifyWithRequest } from "./verify";
+import { localeInfo } from "@/i18n/locales";
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
-
-const bcp47 = { es: "es-ES", en: "en-US" } as const;
 
 export const googleProvider: ProviderDefinition = {
   id: "google",
@@ -14,9 +13,9 @@ export const googleProvider: ProviderDefinition = {
   apiOrigin: "https://generativelanguage.googleapis.com",
 
   summaryModels: [
-    { id: "gemini-3.6-flash", label: "Gemini 3.6 Flash (recomendado)" },
-    { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite (económico)" },
-    { id: "gemini-pro-latest", label: "Gemini Pro (más preciso)" },
+    { id: "gemini-3.6-flash", label: "Gemini 3.6 Flash", tag: "recommended" },
+    { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite", tag: "budget" },
+    { id: "gemini-pro-latest", label: "Gemini Pro", tag: "accurate" },
   ],
   transcriptionModels: [
     { id: "gemini-3.5-transcribe", label: "Gemini 3.5 Transcribe" },
@@ -29,7 +28,7 @@ export const googleProvider: ProviderDefinition = {
     createGoogleGenerativeAI({ apiKey }).transcription(modelId),
 
   transcriptionOptions: (language) => ({
-    google: { languageCodes: [bcp47[language]], mode: "SMART" },
+    google: { languageCodes: [localeInfo[language].bcp47], mode: "SMART" },
   }),
 
   verifyApiKey: (apiKey) =>

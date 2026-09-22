@@ -1,6 +1,7 @@
 import { createSummarizer, createTranscriber } from "@/core/ai/create-services";
 import { describeAiError } from "@/core/ai/errors";
 import type { AiSettings } from "@/core/ai/settings";
+import { getMessages } from "@/i18n/store";
 import type {
   ConsultationLanguage,
   ConsultationSummary,
@@ -29,7 +30,7 @@ export function createDirectConsultationApi(settings: AiSettings): ConsultationA
           language
         );
       } catch (err) {
-        throw new Error(describeAiError(err, "No se pudo transcribir el audio."));
+        throw new Error(describeAiError(err, getMessages().errors.transcribeFailed));
       }
     },
 
@@ -37,7 +38,7 @@ export function createDirectConsultationApi(settings: AiSettings): ConsultationA
       try {
         return await createSummarizer(settings).summarize(transcript, language);
       } catch (err) {
-        throw new Error(describeAiError(err, "No se pudo generar el resumen."));
+        throw new Error(describeAiError(err, getMessages().errors.summarizeFailed));
       }
     },
   };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ShieldCheck } from "lucide-react";
+import { Languages, ShieldCheck } from "lucide-react";
 import {
   getProvider,
   providers,
@@ -17,6 +17,9 @@ import { ModelChoiceField } from "./ModelChoiceField";
 import { ApiKeyField } from "./ApiKeyField";
 import { staggerIndex } from "@/lib/utils";
 import { Sheet } from "../ui/Sheet";
+import { LanguageSelect } from "../LanguageSelect";
+import { Rich } from "@/i18n/Rich";
+import { useI18n } from "@/i18n/useI18n";
 
 function Stagger({ index, children }: { index: number; children: ReactNode }) {
   return (
@@ -37,6 +40,7 @@ export function SettingsPanel({
   onSave,
   onClose,
 }: SettingsPanelProps) {
+  const { t, locale, setLocale } = useI18n();
   const [draft, setDraft] = useState<AiSettings>(settings);
   const needed = requiredProviders(draft);
   const canSave =
@@ -55,8 +59,8 @@ export function SettingsPanel({
 
   return (
     <Sheet
-      title="Configuración de IA"
-      subtitle="Elige tu proveedor y pega la API key de tu clínica."
+      title={t.settings.title}
+      subtitle={t.settings.subtitle}
       onClose={onClose}
       footer={(close) => (
         <>
@@ -64,7 +68,7 @@ export function SettingsPanel({
             onClick={() => close()}
             className="neu-button rounded-full px-5 py-2.5 text-sm font-medium text-text-muted hover:text-text"
           >
-            Cancelar
+            {t.common.cancel}
           </button>
           <button
             onClick={() => {
@@ -74,28 +78,36 @@ export function SettingsPanel({
             disabled={!canSave}
             className="neu-primary rounded-full px-6 py-2.5 text-sm font-semibold"
           >
-            Guardar
+            {t.common.save}
           </button>
         </>
       )}
     >
       <div className="flex flex-col gap-6">
+        {/* Applies immediately (not on Save): a device preference, like the keys. */}
         <Stagger index={0}>
-          <div className="neu-inset flex gap-3 rounded-3xl p-4 text-xs leading-relaxed text-text">
-            <ShieldCheck className="size-5 shrink-0 text-primary-600" />
-            <p>
-              MedScribe es gratuito: funciona con la cuenta de IA de tu clínica.
-              Tu API key se guarda <strong>solo en este dispositivo</strong> y
-              el audio de las consultas viaja directamente de aquí a tu
-              proveedor, sin pasar por ningún servidor de MedScribe.
+          <div className="neu-raised flex items-center justify-between gap-3 rounded-3xl p-4 sm:p-5">
+            <p className="flex items-center gap-2 text-sm font-semibold text-text">
+              <Languages className="size-4 text-primary-600" />
+              {t.language.app}
             </p>
+            <LanguageSelect value={locale} onChange={setLocale} label={t.language.app} />
           </div>
         </Stagger>
 
         <Stagger index={1}>
+          <div className="neu-inset flex gap-3 rounded-3xl p-4 text-xs leading-relaxed text-text">
+            <ShieldCheck className="size-5 shrink-0 text-primary-600" />
+            <p>
+              <Rich text={t.settings.privacy} />
+            </p>
+          </div>
+        </Stagger>
+
+        <Stagger index={2}>
           <ModelChoiceField
-            label="Transcripción de audio"
-            description="Convierte la grabación en texto."
+            label={t.settings.transcription}
+            description={t.settings.transcriptionDescription}
             providers={transcriptionProviders}
             modelsOf={(p) => p.transcriptionModels}
             value={draft.transcription}
@@ -105,10 +117,10 @@ export function SettingsPanel({
           />
         </Stagger>
 
-        <Stagger index={2}>
+        <Stagger index={3}>
           <ModelChoiceField
-            label="Resumen clínico"
-            description="Genera el resumen estructurado a partir del texto."
+            label={t.settings.summary}
+            description={t.settings.summaryDescription}
             providers={providers}
             modelsOf={(p) => p.summaryModels}
             value={draft.summary}
@@ -116,9 +128,9 @@ export function SettingsPanel({
           />
         </Stagger>
 
-        <Stagger index={3}>
-          <div className="neu-raised flex flex-col gap-5 rounded-3xl p-5">
-            <p className="text-sm font-semibold text-text">API keys</p>
+        <Stagger index={4}>
+          <div className="neu-raised flex flex-col gap-5 rounded-3xl p-4 sm:p-5">
+            <p className="text-sm font-semibold text-text">{t.settings.apiKeys}</p>
             {needed.map((id) => (
               <div key={id} className="animate-enter">
                 <ApiKeyField
@@ -132,19 +144,9 @@ export function SettingsPanel({
         </Stagger>
 
         <ul className="list-disc space-y-1.5 px-2 pl-6 text-xs leading-relaxed text-text-muted">
-          <li>
-            Para datos de pacientes usa un plan de pago: en planes gratuitos
-            algunos proveedores pueden usar los datos para entrenar sus modelos.
-            Revisa la política de datos de tu proveedor.
-          </li>
-          <li>
-            Configura un límite de gasto en la cuenta del proveedor para evitar
-            sorpresas en la factura.
-          </li>
-          <li>
-            No uses MedScribe en equipos compartidos sin cerrar sesión del
-            sistema: la key queda guardada en este navegador.
-          </li>
+          {t.settings.tips.map((tip) => (
+            <li key={tip}>{tip}</li>
+          ))}
         </ul>
 
         {Object.keys(settings.apiKeys).length > 0 && (
@@ -152,7 +154,7 @@ export function SettingsPanel({
             onClick={clearKeys}
             className="self-start px-2 text-xs font-medium text-red-600 hover:underline"
           >
-            Borrar las API keys de este dispositivo
+            {t.settings.clearKeys}
           </button>
         )}
       </div>

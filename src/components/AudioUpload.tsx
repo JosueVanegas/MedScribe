@@ -4,6 +4,7 @@ import { useRef, useState, type DragEvent } from "react";
 import { Upload, FileAudio } from "lucide-react";
 import { AUDIO_ACCEPT_ATTR, MAX_AUDIO_MB } from "@/lib/audio/formats";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/useI18n";
 
 type AudioUploadProps = {
   onFile: (file: File) => void;
@@ -32,6 +33,7 @@ function useFilePicker(onFile: (file: File) => void) {
 
 /** Large drop well shown on the start screen. */
 export function AudioDropzone({ onFile, disabled }: AudioUploadProps) {
+  const { t } = useI18n();
   const { input, open } = useFilePicker(onFile);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -54,7 +56,7 @@ export function AudioDropzone({ onFile, disabled }: AudioUploadProps) {
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
       className={cn(
-        "neu-inset flex w-full max-w-sm items-center gap-4 rounded-3xl px-5 py-4 text-left transition-transform duration-300 ease-[var(--ease-spring)] disabled:opacity-40",
+        "neu-inset flex w-full max-w-sm items-center gap-3 rounded-3xl px-4 py-3.5 text-left sm:gap-4 sm:px-5 sm:py-4 transition-transform duration-300 ease-[var(--ease-spring)] disabled:opacity-40",
         isDragging && "scale-[1.03] ring-2 ring-primary-400"
       )}
     >
@@ -62,13 +64,14 @@ export function AudioDropzone({ onFile, disabled }: AudioUploadProps) {
       <span className="neu-raised-sm flex size-11 shrink-0 items-center justify-center rounded-2xl text-primary-600">
         <FileAudio className="size-5" />
       </span>
-      <span className="flex flex-col gap-0.5">
+      <span className="flex min-w-0 flex-col gap-0.5">
         <span className="text-sm font-medium text-text">
-          ¿Grabaste con otro dispositivo?
+          {t.upload.title}
         </span>
         <span className="text-xs leading-relaxed text-text-muted">
-          Arrastra el audio o pulsa para subirlo. MP3, M4A, WAV, OGG, OPUS…
-          hasta {MAX_AUDIO_MB} MB.
+          <span className="hidden sm:inline">{t.upload.dragHint} </span>
+          <span className="sm:hidden">{t.upload.tapHint} </span>
+          {t.upload.formats(MAX_AUDIO_MB)}
         </span>
       </span>
     </button>
@@ -77,6 +80,7 @@ export function AudioDropzone({ onFile, disabled }: AudioUploadProps) {
 
 /** Compact button used next to the record button. */
 export function AudioUploadButton({ onFile, disabled }: AudioUploadProps) {
+  const { t } = useI18n();
   const { input, open } = useFilePicker(onFile);
 
   return (
@@ -84,8 +88,8 @@ export function AudioUploadButton({ onFile, disabled }: AudioUploadProps) {
       type="button"
       onClick={open}
       disabled={disabled}
-      title="Subir audio"
-      aria-label="Subir audio"
+      title={t.upload.button}
+      aria-label={t.upload.button}
       className="neu-button flex size-12 items-center justify-center rounded-full text-text-muted hover:text-primary-700"
     >
       {input}

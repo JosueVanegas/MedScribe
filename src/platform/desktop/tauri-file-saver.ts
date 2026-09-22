@@ -1,9 +1,11 @@
 import type { FileSaver } from "../types";
+import { getMessages } from "@/i18n/store";
 
 function filterFor(fileName: string) {
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-  if (ext === "txt") return { name: "Texto", extensions: ["txt"] };
-  return { name: "Audio", extensions: [ext] };
+  const t = getMessages().export;
+  if (ext === "txt") return { name: t.textFiles, extensions: ["txt"] };
+  return { name: t.audioFiles, extensions: [ext] };
 }
 
 /** Native "Save as…" dialog, then writes the file where the user chose. */

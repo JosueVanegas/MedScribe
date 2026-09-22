@@ -25,14 +25,45 @@ npm run build   # genera un sitio 100% estático en out/
 
 ## Publicar una versión
 
-Los instaladores (Windows `.exe` y Android `.apk` firmado) los compila GitHub Actions y se publican en *Releases*; la página `/descargar` siempre enlaza a la última.
+Los instaladores (Windows `.exe` y Android `.apk` firmado) los compila GitHub Actions y se publican en *Releases*. La página `/descargar` siempre enlaza a la última versión.
+
+### Primera vez (solo una vez)
+
+**1. Guardar la clave de firma de Android en GitHub.** Sin esto el APK no se puede firmar.
+
+Copiar la clave al portapapeles (PowerShell):
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\josue\claves\medscribe-release.jks")) | Set-Clipboard
+```
+
+En el repositorio: **Settings → Secrets and variables → Actions → New repository secret**, crear:
+
+| Nombre | Valor |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | Pegar lo copiado (Ctrl+V) |
+| `ANDROID_KEYSTORE_PASSWORD` | Contraseña de la clave |
+| `ANDROID_KEY_ALIAS` | `medscribe` |
+| `ANDROID_KEY_PASSWORD` | Contraseña de la clave |
+
+> La clave (`medscribe-release.jks`) y su contraseña deben tener copia de seguridad fuera del PC. Si se pierden, no se pueden publicar actualizaciones de Android.
+
+**2. Publicar la web en Vercel.** En [vercel.com/new](https://vercel.com/new) importar el repositorio y pulsar **Deploy**, sin variables de entorno ni cambios de configuración. Cada push a `main` vuelve a desplegar la web automáticamente.
+
+### Publicar
+
+Con todos los cambios ya en un commit:
 
 ```bash
-npm run release            # publica la versión que ya está en package.json
+npm run release            # publica la versión que ya está en package.json (la primera: 1.0.0)
 npm run release -- 1.0.1   # sube a 1.0.1, hace el commit y la publica
 ```
 
-Requisitos (una sola vez): los secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD` en *Settings → Secrets and variables → Actions*.
+El comando crea la etiqueta `vX.Y.Z` y la sube. GitHub compila los instaladores en ~10-15 minutos (pestaña **Actions**) y los publica en **Releases**. Hasta la primera publicación, los botones de `/descargar` dan 404.
+
+Para cada actualización, subir el número: `1.0.1`, `1.0.2`… (o `1.1.0` si hay novedades grandes). El comando no publica si hay cambios sin commit, si el número ya existe o si no tiene el formato `X.Y.Z`.
+
+Si un paso sale en rojo en **Actions**, abrirlo para ver el error; normalmente es un secret que falta o está mal copiado.
 
 ## Arquitectura
 

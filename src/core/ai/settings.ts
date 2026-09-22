@@ -69,5 +69,5 @@ export function describeChoice(choice: ModelChoice): string {
   const known = [...provider.summaryModels, ...provider.transcriptionModels].find(
     (m) => m.id === choice.model
   );
-  return `${provider.name} · ${known?.label.replace(/ \(.*\)$/, "") ?? choice.model}`;
+  return `${provider.name} · ${known?.label ?? choice.model}`;
 }

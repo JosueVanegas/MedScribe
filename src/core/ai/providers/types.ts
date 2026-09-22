@@ -5,9 +5,13 @@ export type ProviderOptions = NonNullable<
   Parameters<typeof transcribe>[0]["providerOptions"]
 >;
 
+export type ModelTag = "recommended" | "budget" | "accurate" | "fastBudget";
+
 export type ModelOption = {
   id: string;
   label: string;
+  /** Shown translated next to the label, e.g. "(recommended)". */
+  tag?: ModelTag;
 };
 
 /**
