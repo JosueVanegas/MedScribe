@@ -23,6 +23,17 @@ npm run build   # genera un sitio 100% estático en out/
 
 `out/` se puede publicar gratis en Cloudflare Pages, Netlify, GitHub Pages o cualquier hosting estático (debe servirse por HTTPS). Es una PWA: se puede instalar en Android, iOS ("Añadir a pantalla de inicio"), Windows y macOS.
 
+## Publicar una versión
+
+Los instaladores (Windows `.exe` y Android `.apk` firmado) los compila GitHub Actions y se publican en *Releases*; la página `/descargar` siempre enlaza a la última.
+
+```bash
+npm run release            # publica la versión que ya está en package.json
+npm run release -- 1.0.1   # sube a 1.0.1, hace el commit y la publica
+```
+
+Requisitos (una sola vez): los secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` y `ANDROID_KEY_PASSWORD` en *Settings → Secrets and variables → Actions*.
+
 ## Arquitectura
 
 ```

@@ -30,7 +30,7 @@ function toParagraphs(text: string): TranscriptEntry[] {
 export function ConsultationApp() {
   const { history, add: addToHistory, remove: removeFromHistory } =
     useConsultationHistory();
-  const { files } = usePlatform();
+  const { files, id: platformId } = usePlatform();
   const { settings, save: saveSettings, isHydrated } = useAiSettings();
   const api = useMemo(() => createDirectConsultationApi(settings), [settings]);
   const configured = isConfigured(settings);
@@ -125,6 +125,7 @@ export function ConsultationApp() {
               onUpload={requiringSetup(consultation.uploadAudio)}
               needsSetup={isHydrated && !configured}
               onOpenSettings={openSettings}
+              showDownloadLink={isHydrated && platformId === "web"}
             />
           ) : activeTab === "history" ? (
             <History

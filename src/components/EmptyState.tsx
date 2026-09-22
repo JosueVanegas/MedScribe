@@ -1,6 +1,14 @@
 "use client";
 
-import { ChevronRight, Clock, KeyRound, Languages, Mic } from "lucide-react";
+import Link from "next/link";
+import {
+  ChevronRight,
+  Clock,
+  Download,
+  KeyRound,
+  Languages,
+  Mic,
+} from "lucide-react";
 import { AudioDropzone } from "./AudioUpload";
 import type { ConsultationLanguage } from "@/types/consultation";
 import { staggerIndex } from "@/lib/utils";
@@ -14,6 +22,8 @@ type EmptyStateProps = {
   onUpload: (file: File) => void;
   needsSetup: boolean;
   onOpenSettings: () => void;
+  /** Only the browser version offers the installable apps. */
+  showDownloadLink: boolean;
 };
 
 const pill =
@@ -27,6 +37,7 @@ export function EmptyState({
   onUpload,
   needsSetup,
   onOpenSettings,
+  showDownloadLink,
 }: EmptyStateProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-7 overflow-y-auto px-6 py-6">
@@ -94,6 +105,12 @@ export function EmptyState({
             <Clock className="size-3.5" />
             Historial ({historyCount})
           </button>
+        )}
+        {showDownloadLink && (
+          <Link href="/descargar" className={pill}>
+            <Download className="size-3.5" />
+            Descargar app
+          </Link>
         )}
       </div>
     </div>

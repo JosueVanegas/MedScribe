@@ -1,6 +1,6 @@
 {
   "name": "medscribe",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,8 @@
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
     "android:sync": "next build && cap sync android",
-    "android:open": "cap open android"
+    "android:open": "cap open android",
+    "release": "node scripts/release.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.59",

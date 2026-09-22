@@ -1,0 +1,136 @@
+# Publishes a MedScribe release: `git tag v1.2.3 && git push origin v1.2.3`.
+# Builds the Windows installer and the signed Android APK and attaches both to
+# a GitHub Release with fixed file names, so /descargar always links to the
+# latest version. Can also be run by hand (Actions → Run workflow) to test the
+# builds without publishing anything.
+name: Publicar versión
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Comprobar versión
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: La etiqueta coincide con package.json
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          if [ "v$PKG" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::La etiqueta $GITHUB_REF_NAME no coincide con la versión de package.json ($PKG)."
+            exit 1
+          fi
+
+  windows:
+    name: Windows (.exe)
+    needs: version
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: npm ci
+      - name: Compilar instalador
+        run: npx tauri build --bundles nsis
+      - name: Nombre fijo para la descarga
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          Copy-Item $exe.FullName MedScribe-Windows-setup.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: MedScribe-Windows-setup.exe
+          if-no-files-found: error
+
+  android:
+    name: Android (.apk firmado)
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+      - name: Web → Android
+        run: npm run android:sync
+      - name: Clave de firma (desde los secrets del repositorio)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::Faltan los secrets ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          {
+            printf 'storeFile=%s\n' "$RUNNER_TEMP/release.jks"
+            printf 'storePassword=%s\n' "$KEYSTORE_PASSWORD"
+            printf 'keyAlias=%s\n' "${KEY_ALIAS:-medscribe}"
+            printf 'keyPassword=%s\n' "${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+          } > android/keystore.properties
+      - name: Compilar APK de release
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --console=plain
+      - name: Verificar firma y nombre fijo
+        run: |
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          "$ANDROID_HOME/build-tools/$BT/apksigner" verify --print-certs "$APK" | grep -E "DN|SHA-256"
+          cp "$APK" MedScribe-Android.apk
+      - name: Borrar la clave del runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks" android/keystore.properties
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: MedScribe-Android.apk
+          if-no-files-found: error
+
+  release:
+    name: Publicar en GitHub Releases
+    needs: [windows, android]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - name: Checksums
+        run: sha256sum MedScribe-Windows-setup.exe MedScribe-Android.apk > SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: MedScribe ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            MedScribe-Windows-setup.exe
+            MedScribe-Android.apk
+            SHA256SUMS.txt
