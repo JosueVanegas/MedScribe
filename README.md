@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MedScribe
 
-## Getting Started
+Graba (o sube) el audio de una consulta médica y obtén un resumen clínico estructurado.
 
-First, run the development server:
+**Gratis y sin servidor:** cada clínica conecta su propio proveedor de IA (Google Gemini, OpenAI, Anthropic Claude, Groq o Mistral AI) con su propia API key. La key se guarda solo en el dispositivo y el audio viaja directamente del dispositivo al proveedor; no pasa por ningún servidor de MedScribe.
+
+## Desarrollo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre la app, pulsa el engranaje ⚙ y pega una API key. No hace falta ningún `.env`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> El micrófono solo funciona en `https://` o `localhost`. Para probar desde el móvil en tu red local: `npm run dev -- --experimental-https`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Build y despliegue
 
-## Learn More
+```bash
+npm run build   # genera un sitio 100% estático en out/
+```
 
-To learn more about Next.js, take a look at the following resources:
+`out/` se puede publicar gratis en Cloudflare Pages, Netlify, GitHub Pages o cualquier hosting estático (debe servirse por HTTPS). Es una PWA: se puede instalar en Android, iOS ("Añadir a pantalla de inicio"), Windows y macOS.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Arquitectura
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/core/            Lógica sin dependencias de UI (funciona en navegador, Node o app nativa)
+  consultation/      Contratos (AudioTranscriber, ConsultationSummarizer), prompt y esquema
+  ai/providers/      Un archivo por proveedor + registro en index.ts
+  ai/                Adaptadores del AI SDK, ajustes, fábrica de servicios y errores
+src/lib/             Grabadora, subtítulos en vivo, API de consulta, almacenamiento, exportación
+src/hooks/           Estado de React (flujo de consulta, historial, ajustes)
+src/components/      UI
+```
 
-## Deploy on Vercel
+### Añadir un proveedor
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. `npm i @ai-sdk/<proveedor>`
+2. Crea `src/core/ai/providers/<proveedor>.ts` implementando `ProviderDefinition` (modelos, cómo crear el cliente con la key y cómo verificarla).
+3. Añádelo a la lista de `src/core/ai/providers/index.ts`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+La UI de configuración, la CSP y el resto de la app lo recogen automáticamente.

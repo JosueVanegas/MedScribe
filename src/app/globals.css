@@ -1,26 +1,333 @@
 @import "tailwindcss";
 
+/*
+ * Neumorphic design system.
+ * Every surface shares the page colour; depth comes only from paired
+ * light/dark shadows. Colour is reserved for meaning (teal = action,
+ * red = recording/danger), which keeps the UI calm and clinical.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --neu-bg: #ecf0f4;
+  --neu-light: #ffffff;
+  --neu-dark: rgb(163 177 198 / 0.62);
+  --neu-dark-soft: rgb(163 177 198 / 0.4);
+
+  /* Motion curves. Only transform/opacity are animated (GPU-composited). */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --color-primary-50: #effaf7;
+  --color-primary-100: #d3f2ea;
+  --color-primary-200: #a7e4d5;
+  --color-primary-300: #6fd0b9;
+  --color-primary-400: #34b999;
+  --color-primary-500: #16a384;
+  --color-primary-600: #0e876d;
+  --color-primary-700: #0d6c58;
+  --color-primary-800: #0f5647;
+  --color-primary-900: #10473b;
+
+  --color-surface: var(--neu-bg);
+  --color-surface-alt: var(--neu-bg);
+  --color-text: #1f2b3a;
+  --color-text-muted: #56667b;
+  --color-border: #d5dde6;
+
+  --animate-enter: enter 480ms var(--ease-out-soft) backwards;
+  --animate-enter-scale: enter-scale 420ms var(--ease-spring) backwards;
+  --animate-fade: fade 320ms var(--ease-out-soft) backwards;
+  --animate-fade-out: fade-out 260ms ease-in both;
+  --animate-sheet-in: sheet-in 420ms var(--ease-out-soft) backwards;
+  --animate-sheet-out: sheet-out 260ms cubic-bezier(0.4, 0, 1, 1) both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-ripple: ripple 2.2s var(--ease-out-soft) infinite;
+  --animate-wave: wave 1.2s ease-in-out infinite;
+  --animate-shake: shake 420ms var(--ease-out-soft) both;
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  @keyframes enter-scale {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(24px) scale(0.985);
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      opacity: 0;
+      transform: translateY(24px) scale(0.985);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+  @keyframes ripple {
+    from {
+      opacity: 0.45;
+      transform: scale(0.75);
+    }
+    to {
+      opacity: 0;
+      transform: scale(1.45);
+    }
+  }
+  @keyframes wave {
+    0%,
+    60%,
+    100% {
+      opacity: 0.35;
+      transform: translateY(0) scale(0.85);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(-5px) scale(1);
+    }
+  }
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-5px);
+    }
+    40% {
+      transform: translateX(4px);
+    }
+    60% {
+      transform: translateX(-2px);
+    }
+    80% {
+      transform: translateX(1px);
+    }
   }
 }
 
+/*
+ * Staggered lists: set `style={{ "--i": index }}` on each item. !important
+ * because `animate-*` shorthands would otherwise reset the delay.
+ */
+@utility stagger {
+  animation-delay: calc(min(var(--i, 0), 8) * 55ms) !important;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-delay: 0ms !important;
+  }
+}
+
+/* Height collapse without measuring (grid-rows 1fr → 0fr). */
+@utility collapsible {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 320ms var(--ease-out-soft),
+    opacity 240ms ease,
+    transform 320ms var(--ease-out-soft),
+    margin 320ms var(--ease-out-soft);
+
+  & > * {
+    min-height: 0;
+  }
+  &[data-collapsed="true"] > * {
+    overflow: hidden;
+  }
+  &[data-collapsed="true"] {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* Raised: sits above the surface (cards, buttons at rest). */
+@utility neu-raised {
+  background-color: var(--neu-bg);
+  box-shadow:
+    8px 8px 18px var(--neu-dark),
+    -8px -8px 18px var(--neu-light);
+}
+
+@utility neu-raised-sm {
+  background-color: var(--neu-bg);
+  box-shadow:
+    4px 4px 10px var(--neu-dark),
+    -4px -4px 10px var(--neu-light);
+}
+
+/* Inset: carved into the surface (inputs, wells, tracks). */
+@utility neu-inset {
+  background-color: var(--neu-bg);
+  box-shadow:
+    inset 5px 5px 11px var(--neu-dark),
+    inset -5px -5px 11px var(--neu-light);
+}
+
+@utility neu-inset-sm {
+  background-color: var(--neu-bg);
+  box-shadow:
+    inset 3px 3px 6px var(--neu-dark-soft),
+    inset -3px -3px 6px var(--neu-light);
+}
+
+/* Neutral button: raised at rest, pressed when active. */
+@utility neu-button {
+  background-color: var(--neu-bg);
+  box-shadow:
+    4px 4px 10px var(--neu-dark),
+    -4px -4px 10px var(--neu-light);
+  transition:
+    box-shadow 220ms var(--ease-out-soft),
+    color 200ms ease,
+    opacity 200ms ease,
+    transform 260ms var(--ease-spring);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+      6px 6px 14px var(--neu-dark),
+      -6px -6px 14px var(--neu-light);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(0) scale(0.97);
+    transition-duration: 90ms;
+    box-shadow:
+      inset 3px 3px 7px var(--neu-dark),
+      inset -3px -3px 7px var(--neu-light);
+  }
+  &:disabled {
+    box-shadow:
+      2px 2px 5px var(--neu-dark-soft),
+      -2px -2px 5px var(--neu-light);
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+/* Primary action: convex teal. */
+@utility neu-primary {
+  color: #fff;
+  background: linear-gradient(145deg, #1bb592, #11937a);
+  box-shadow:
+    5px 5px 12px var(--neu-dark),
+    -5px -5px 12px var(--neu-light);
+  transition:
+    box-shadow 220ms var(--ease-out-soft),
+    filter 200ms ease,
+    opacity 200ms ease,
+    transform 280ms var(--ease-spring);
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.05);
+    transform: scale(1.03);
+  }
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+    transition-duration: 90ms;
+    background: linear-gradient(145deg, #11937a, #1bb592);
+    box-shadow:
+      inset 3px 3px 7px rgb(0 0 0 / 0.18),
+      inset -3px -3px 7px rgb(255 255 255 / 0.12);
+  }
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+/* Recording state: convex red. */
+@utility neu-danger {
+  color: #fff;
+  background: linear-gradient(145deg, #f06464, #d94444);
+  box-shadow:
+    5px 5px 12px var(--neu-dark),
+    -5px -5px 12px var(--neu-light);
+  transition: transform 280ms var(--ease-spring);
+
+  &:hover {
+    transform: scale(1.03);
+  }
+  &:active {
+    transform: scale(0.95);
+    transition-duration: 90ms;
+  }
+}
+
+@utility neu-focus {
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-400);
+    outline-offset: 3px;
+  }
+}
+
+html {
+  background: var(--neu-bg);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--neu-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary-400);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--color-primary-200);
+}
+
+/*
+ * Respect the OS "reduce motion" setting. Durations are shortened (not
+ * removed) so animationend/transitionend still fire for exit animations.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Quiet scrollbars that don't break the soft surfaces. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }
