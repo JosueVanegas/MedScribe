@@ -42,6 +42,7 @@ export function LevelMeter({
     let smoothed = 0;
     let lastSample = 0;
     let frame = 0;
+    let dirty = true;
     const rgb = COLORS[tone];
 
     const resize = () => {
@@ -49,6 +50,7 @@ export function LevelMeter({
       canvas.width = Math.round(canvas.clientWidth * dpr);
       canvas.height = Math.round(canvas.clientHeight * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      dirty = true;
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -67,7 +69,13 @@ export function LevelMeter({
         smoothed = level > smoothed ? level : smoothed * 0.7 + level * 0.3;
         levels.push(smoothed);
         if (levels.length > capacity) levels = levels.slice(-capacity);
+        dirty = true;
       }
+
+      // Repaint only when there is something new (~16 fps, not 60): on a phone
+      // this keeps the main thread free so taps stay responsive.
+      if (!dirty) return;
+      dirty = false;
 
       ctx.clearRect(0, 0, width, height);
       const barWidth = Math.max(2, barStep * 0.55);

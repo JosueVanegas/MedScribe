@@ -14,6 +14,9 @@ const PREFERRED_MIME_TYPES = [
   "audio/webm",
 ];
 
+/** How long to wait for MediaRecorder's "stop" event before giving up on it. */
+const STOP_TIMEOUT_MS = 3000;
+
 function isRecordingSupported(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -91,12 +94,20 @@ export class WebAudioCapture implements AudioCapture {
     }
 
     return new Promise((resolve) => {
-      recorder.onstop = () => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
         const type = recorder.mimeType || this.chunks[0]?.type || "audio/webm";
         const blob = this.chunks.length ? new Blob(this.chunks, { type }) : null;
         this.release();
         resolve(blob);
       };
+      // Some mobile browsers never fire "stop" if the tab was throttled while
+      // recording. Keep the audio already captured instead of hanging forever.
+      const timer = setTimeout(finish, STOP_TIMEOUT_MS);
+      recorder.onstop = finish;
       recorder.stop();
     });
   }

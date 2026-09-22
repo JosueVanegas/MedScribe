@@ -21,8 +21,12 @@ function VoiceHalo({ readLevel }: { readLevel: () => number }) {
   useEffect(() => {
     let frame = 0;
     let smoothed = 0;
-    const tick = () => {
+    let last = 0;
+    const tick = (now: number) => {
       frame = requestAnimationFrame(tick);
+      // ~20 fps is plenty for a glow and leaves the phone room to breathe.
+      if (now - last < 50) return;
+      last = now;
       const level = readLevel();
       smoothed = level > smoothed ? level : smoothed * 0.85 + level * 0.15;
       if (ref.current) {
@@ -64,7 +68,8 @@ export function RecordButton({ status, onStart, onStop, readLevel }: RecordButto
         disabled={isBusy}
         aria-label={isRecording ? t.control.stopRecording : t.control.startRecording}
         className={cn(
-          "relative flex size-[3.75rem] items-center justify-center rounded-full sm:size-[4.25rem]",
+          // touch-manipulation: no double-tap-zoom delay before the tap lands.
+          "relative flex size-[3.75rem] touch-manipulation items-center justify-center rounded-full sm:size-[4.25rem]",
           visual === "recording" && "neu-danger",
           visual === "busy" && "neu-inset text-primary-600",
           visual === "idle" && "neu-primary"

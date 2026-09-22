@@ -21,31 +21,67 @@ export type StreamLevelReader = {
   close(): void;
 };
 
-/** Reads the loudness of a live MediaStream without recording it. */
-export function createStreamLevelReader(stream: MediaStream): StreamLevelReader {
+const NO_READER: StreamLevelReader = { read: () => 0, close: () => {} };
+
+/**
+ * One AudioContext for the whole app, kept alive between recordings.
+ * Browsers only allow a handful per page and closing one doesn't always free
+ * its slot right away, so creating a new context per recording eventually
+ * yields a dead (permanently suspended) one — the mic test would then show a
+ * flat line after a couple of recordings.
+ */
+let shared: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
   const AudioCtx =
     window.AudioContext ??
     (window as unknown as { webkitAudioContext?: typeof AudioContext })
       .webkitAudioContext;
-  if (!AudioCtx) return { read: () => 0, close: () => {} };
+  if (!AudioCtx) return null;
+  if (!shared || shared.state === "closed") {
+    try {
+      shared = new AudioCtx();
+    } catch {
+      return null;
+    }
+  }
+  return shared;
+}
 
-  const context = new AudioCtx();
-  // Created after an `await`, so some browsers start it suspended.
-  void context.resume().catch(() => {});
+/** Reads the loudness of a live MediaStream without recording it. */
+export function createStreamLevelReader(stream: MediaStream): StreamLevelReader {
+  const context = getAudioContext();
+  if (!context) return NO_READER;
+
+  // Suspended when created outside a user gesture, or after the OS took the
+  // audio focus away (a phone call, another app recording).
+  const wake = () => {
+    if (context.state === "suspended") void context.resume().catch(() => {});
+  };
+  wake();
+
   const analyser = context.createAnalyser();
   analyser.fftSize = 1024;
-  context.createMediaStreamSource(stream).connect(analyser);
+  const source = context.createMediaStreamSource(stream);
+  source.connect(analyser);
   const samples = new Float32Array(analyser.fftSize);
+  let closed = false;
 
   return {
     read() {
+      if (closed) return 0;
+      wake();
       analyser.getFloatTimeDomainData(samples);
       let sum = 0;
       for (const s of samples) sum += s * s;
       return amplitudeToLevel(Math.sqrt(sum / samples.length));
     },
     close() {
-      void context.close().catch(() => {});
+      if (closed) return;
+      closed = true;
+      // Only this stream's nodes: the shared context stays available.
+      source.disconnect();
+      analyser.disconnect();
     },
   };
 }

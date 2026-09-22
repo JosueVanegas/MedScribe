@@ -81,6 +81,9 @@ export function ConsultationApp() {
 
   const paragraphs = useMemo(() => toParagraphs(transcript), [transcript]);
   const isRecording = status === "recording";
+  // Without live captions the transcript area is empty, so the waveform goes
+  // there instead of in the control bar: one canvas at a time, never two.
+  const showBigMeter = isRecording && !liveCaptions.isAvailable;
 
   const transcriptEmptyMessage = isRecording
     ? liveCaptions.isAvailable
@@ -151,7 +154,7 @@ export function ConsultationApp() {
               interimText={isRecording ? liveCaptions.interimText : ""}
               emptyMessage={transcriptEmptyMessage}
               emptyVisual={
-                isRecording && (
+                showBigMeter && (
                   <LevelMeter
                     read={consultation.readLevel}
                     tone="danger"
@@ -181,6 +184,7 @@ export function ConsultationApp() {
         status={status}
         elapsedSeconds={consultation.elapsedSeconds}
         readLevel={consultation.readLevel}
+        showMeter={!showBigMeter}
         error={consultation.error}
         canRetry={consultation.canRetry}
         canReset={hasContent && !isRecording && !isBusy}

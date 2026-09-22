@@ -29,7 +29,9 @@ export function Transcript({
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Instant, not smooth: live captions update several times per second and
+    // a running smooth scroll competes with taps on slower phones.
+    bottomRef.current?.scrollIntoView({ block: "end" });
   }, [entries, interimText]);
 
   const isEmpty = entries.length === 0 && !interimText;

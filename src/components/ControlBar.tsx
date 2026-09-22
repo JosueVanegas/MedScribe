@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Download, RefreshCw, RotateCcw, Settings } from "lucide-react";
 import { RecordButton } from "./RecordButton";
 import { LevelMeter } from "./LevelMeter";
+import { cn } from "@/lib/utils";
 import { AudioUploadButton } from "./AudioUpload";
 import type { ConsultationStatus } from "@/types/consultation";
 import { useI18n } from "@/i18n/useI18n";
@@ -13,6 +14,8 @@ type ControlBarProps = {
   elapsedSeconds: number;
   /** Live microphone loudness (0..1) while recording. */
   readLevel: () => number;
+  /** False when the transcript already shows the big waveform (draw it once). */
+  showMeter?: boolean;
   error: string | null;
   canRetry: boolean;
   canReset: boolean;
@@ -43,6 +46,7 @@ export function ControlBar({
   status,
   elapsedSeconds,
   readLevel,
+  showMeter = true,
   error,
   canRetry,
   canReset,
@@ -128,12 +132,19 @@ export function ControlBar({
 
         {isRecording ? (
           <div className="flex w-full max-w-xs animate-fade flex-col items-center gap-1.5">
-            <div className="neu-inset-sm flex w-full items-center gap-3 rounded-full py-1.5 pr-4 pl-3">
+            <div
+              className={cn(
+                "neu-inset-sm flex items-center gap-3 rounded-full py-1.5 pr-4 pl-3",
+                showMeter ? "w-full" : "px-4"
+              )}
+            >
               <span className="flex shrink-0 items-center gap-1.5 font-mono text-xs font-semibold text-red-600 tabular-nums">
                 <span className="size-2 animate-pulse rounded-full bg-red-500" />
                 {formatElapsed(elapsedSeconds)}
               </span>
-              <LevelMeter read={readLevel} tone="danger" className="h-7 min-w-0 flex-1" />
+              {showMeter && (
+                <LevelMeter read={readLevel} tone="danger" className="h-7 min-w-0 flex-1" />
+              )}
             </div>
             <p className="text-[11px] font-medium text-text-muted">{hints.recording}</p>
           </div>
