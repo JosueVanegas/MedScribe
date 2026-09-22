@@ -48,7 +48,8 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
   "font-src 'self'",
-  `connect-src 'self' ${providers.map((p) => p.apiOrigin).join(" ")}`,
+  // ipc: is the Tauri desktop bridge (native save dialog); unused on the web.
+  `connect-src 'self' ipc: http://ipc.localhost ${providers.map((p) => p.apiOrigin).join(" ")}`,
   "worker-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",

@@ -1,0 +1,40 @@
+[package]
+name = "medscribe"
+version = "0.1.0"
+description = "MedScribe — resumen de consultas médicas con IA"
+authors = ["Josue Vanegas"]
+license = ""
+repository = "https://github.com/JosueVanegas/MedScribe"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "medscribe_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.3", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.6", features = [] }
+tauri-plugin-log = "2"
+# Native "Save as…" dialog + writing the chosen file (exports, recordings).
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+
+[profile.release]
+# Smaller installer.
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
+
+# Access to the WebView2 instance (auto-grant the mic to the app's own UI).
+# Versions match the ones Tauri already depends on.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.38"
+windows-core = "0.61"
