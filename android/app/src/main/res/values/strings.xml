@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MedScribe</string>
+    <string name="title_activity_main">MedScribe</string>
+    <string name="package_name">com.josuevanegas.medscribe</string>
+    <string name="custom_url_scheme">com.josuevanegas.medscribe</string>
+    <string name="recording_channel_name">Grabación de consultas</string>
+    <string name="recording_notification_title">MedScribe está grabando</string>
+    <string name="recording_notification_text">La consulta se sigue grabando aunque bloquees la pantalla.</string>
+</resources>

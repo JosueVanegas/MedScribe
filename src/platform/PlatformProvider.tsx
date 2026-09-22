@@ -1,17 +1,18 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { Capacitor } from "@capacitor/core";
 import { isTauri } from "@tauri-apps/api/core";
 import type { Platform } from "./types";
+import { createAndroidPlatform } from "./android";
 import { createDesktopPlatform } from "./desktop";
 import { createWebPlatform } from "./web";
 
-/**
- * Picks the implementation for the current runtime; the rest of the app
- * never changes. (Android via Capacitor will be detected here next.)
- */
+/** Picks the implementation for the current runtime; the rest of the app never changes. */
 function resolvePlatform(): Platform {
-  if (typeof window !== "undefined" && isTauri()) return createDesktopPlatform();
+  if (typeof window === "undefined") return createWebPlatform();
+  if (isTauri()) return createDesktopPlatform();
+  if (Capacitor.getPlatform() === "android") return createAndroidPlatform();
   return createWebPlatform();
 }
 
